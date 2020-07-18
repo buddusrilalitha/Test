@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="3a0775a3-be79-4a86-a785-8b8d3656a073" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="33118f73-b14c-4177-8212-46e111be876b" >
+		<db:my-sql-connection host="mudb.learn.mulesoft.com" port="3306" user="mule" password="mule" database="training" />
+	</db:config>
+	<flow name="getallaccounts" doc:id="23399d01-b75e-414c-ba73-8ebea2ddf7bf" >
+		<db:select doc:name="Select from flights_customers" doc:id="005a4426-8830-4c35-82c8-60456f1c20ef" config-ref="Database_Config">
+			<db:sql >SELECT * from flights_customers
+</db:sql>
+		</db:select>
+		<ee:transform doc:name="payload to JSON" doc:id="b4b21c89-381e-4471-b1a9-c850e0f0de7c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	id: payload01.accountID default "",
+	firstName: (payload01.name default "" splitBy " ")[0] default "",
+	lastName: (payload01.name default "" splitBy " ")[1] default "",
+	address: ((payload01.street default "") ++ ", " ++ (payload01.city default "")) ++ ", " ++ (payload01.state default ""),
+	postal: payload01.postal default "",
+	country: payload01.country default "",
+	creationDate: payload01.creationDate as String default "",
+	accountType: payload01.accountType default "",
+	miles: payload01.miles default 0
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="getaccountsbyID" doc:id="04eb9c41-179c-4d4f-82ea-0f94f853315e" >
+		<db:select doc:name="Select from flights_customers by ID" doc:id="ba67fa92-cd94-4f95-ab6f-5c089ea17616" config-ref="Database_Config" >
+			<db:sql >SELECT * from flights_customers WHERE accountID = :ID
+</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	ID : attributes.uriParams.ID
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="payload to JSON" doc:id="e9f6281c-a37e-41bc-b50c-6f2e51cbfd3b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	id: payload01.accountID default "",
+	firstName: (payload01.name default "" splitBy " ")[0] default "",
+	lastName: (payload01.name default "" splitBy " ")[1] default "",
+	address: ((payload01.street default "") ++ ", " ++ (payload01.city default "")) ++ ", " ++ (payload01.state default ""),
+	postal: payload01.postal default "",
+	country: payload01.country default "",
+	creationDate: payload01.creationDate as String default "",
+	accountType: payload01.accountType default "",
+	miles: payload01.miles default 0
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="postaccount" doc:id="dd9750f5-e8e8-4a1d-b9d4-82169b2413ef" >
+		<set-payload value='#[output application/json --- {"message": "Account added (but not really)"}]' doc:name='{"message": "Flight added (but not really)"}' doc:id="54644fdb-b2d9-4726-8e5a-e49e972f5863" />
+	</flow>
+	<flow name="putaccount" doc:id="cee1486c-32b8-42bf-a567-0daf61cf70d9" >
+		<set-payload value='#[%dw 2.0
+output application/json
+---
+{
+  message: "account with id " ++ attributes.uriParams.ID ++ " replaced (but not really)"
+}]' doc:name="Put message" doc:id="92af092f-a104-400c-8e4e-f9fae40e375f" />
+	</flow>
+	<flow name="deleteaccount" doc:id="09d8ae59-b588-40b5-ad5f-e7451fdfb34e" >
+		<set-payload value='#[%dw 2.0
+output application/json
+---
+{
+  message: "account with ID " ++ attributes.uriParams.ID default " "++ " deleted (but not really)"
+}]' doc:name="Delete Message" doc:id="4c81a014-5125-4aeb-b897-0115a0939de7" />
+	</flow>
+	<flow name="patchaccount" doc:id="53407060-776f-4f15-b6e6-e1d38c79bdad" >
+		<set-payload value='#[%dw 2.0
+output application/json
+---
+{
+  message: "account with ID " ++ attributes.uriParams.ID default " "++ " updated (but not really)"
+}]' doc:name="Patch Message" doc:id="b7e4b493-642d-4483-ab55-e597a6e7d612" />
+	</flow>
+</mule>
